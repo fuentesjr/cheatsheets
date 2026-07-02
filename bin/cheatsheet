@@ -1,0 +1,171 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "cgi"
+
+module Cheatsheet
+  Error = Class.new(StandardError)
+
+  ROOT = File.expand_path("..", __dir__)
+
+  module_function
+
+  def slugify(topic)
+    topic.strip.downcase.gsub(/[^a-z0-9]+/, "-").gsub(/\A-+|-+\z/, "")
+  end
+
+  # Everything from <!DOCTYPE html (or <html) through </html>; nil if absent.
+  def extract_html(text)
+    text = text.to_s
+    start = text.index(/<!DOCTYPE\s+html/i) || text.index(/<html[\s>]/i)
+    close = text.rindex(%r{</html\s*>}i)
+    return nil unless start && close && close >= start
+    stop = text.index(">", close)
+    text[start..stop]
+  end
+
+  # Convention: review output's first meaningful line is exactly
+  # "VERDICT: PASS" or "VERDICT: FAIL", followed by an issue list.
+  # Anything unparseable counts as a failure.
+  def parse_verdict(text)
+    lines = text.to_s.lines
+    idx = lines.index { |l| l.strip.match?(/\AVERDICT:\s*(PASS|FAIL)\b/i) }
+    return [false, text.to_s.strip] unless idx
+
+    verdict = lines[idx].strip[/\AVERDICT:\s*(PASS|FAIL)/i, 1].upcase
+    issues = lines[(idx + 1)..].join.strip
+    [verdict == "PASS", issues]
+  end
+
+  def topics(root = ROOT)
+    Dir.children(root)
+       .reject { |name| name.start_with?(".") }
+       .select { |name| File.file?(File.join(root, name, "index.html")) }
+       .sort
+  end
+
+  def rebuild_index(root = ROOT)
+    items = topics(root).map do |t|
+      %(      <li><a href="#{CGI.escapeHTML(t)}/">#{CGI.escapeHTML(t)}</a></li>)
+    end
+    File.write(File.join(root, "index.html"), <<~HTML)
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Cheatsheets</title>
+        <style>
+          :root { color-scheme: light dark; }
+          body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.6; }
+          h1 { font-size: 1.6rem; border-bottom: 1px solid #8884; padding-bottom: .5rem; }
+          ul { list-style: none; padding: 0; }
+          li { margin: .25rem 0; }
+          a { color: #2563eb; text-decoration: none; font-size: 1.1rem; }
+          a:hover { text-decoration: underline; }
+          @media (prefers-color-scheme: dark) { a { color: #60a5fa; } }
+        </style>
+      </head>
+      <body>
+        <h1>Cheatsheets</h1>
+        <ul>
+      #{items.join("\n")}
+        </ul>
+      </body>
+      </html>
+    HTML
+  end
+
+  def claude_available?
+    ENV.fetch("PATH", "").split(File::PATH_SEPARATOR)
+       .any? { |dir| File.executable?(File.join(dir, "claude")) }
+  end
+
+  def run_claude(prompt)
+    out = IO.popen(["claude", "-p"], "r+") do |io|
+      io.write(prompt)
+      io.close_write
+      io.read
+    end
+    raise Error, "claude exited with status #{$?.exitstatus}" unless $?.success?
+    out
+  end
+
+  def read_prompt(name, topic)
+    path = File.join(ROOT, "prompts", name)
+    raise Error, "missing prompt template: #{path}" unless File.file?(path)
+    File.read(path).gsub("{{TOPIC}}", topic)
+  end
+
+  def review(html, topic)
+    prompt = read_prompt("review.md", topic) + "\n\n" + html
+    parse_verdict(run_claude(prompt))
+  end
+
+  def generate(topic)
+    raise Error, "claude CLI not found in PATH" unless claude_available?
+
+    slug = slugify(topic)
+    raise Error, "invalid topic" if slug.empty?
+
+    sheet_path = File.join(ROOT, slug, "index.html")
+    if File.exist?(sheet_path)
+      print "#{slug}/index.html exists. Overwrite? [y/N] "
+      abort "aborted" unless $stdin.gets.to_s.strip.casecmp?("y")
+    end
+
+    base_prompt = read_prompt("generate.md", topic)
+    prompt = base_prompt
+    issues = nil
+
+    2.times do |attempt|
+      label = attempt.zero? ? "Generating" : "Regenerating"
+      warn "#{label} #{slug}..."
+      html = extract_html(run_claude(prompt))
+      raise Error, "no HTML document found in claude output" unless html
+
+      warn "Reviewing #{slug}..."
+      passed, issues = review(html, topic)
+      if passed
+        Dir.mkdir(File.dirname(sheet_path)) unless Dir.exist?(File.dirname(sheet_path))
+        File.write(sheet_path, html)
+        rebuild_index
+        puts "Wrote #{slug}/index.html"
+        system("open", sheet_path)
+        return
+      end
+
+      warn "Review failed:\n#{issues}"
+      prompt = base_prompt +
+               "\n\nA previous attempt failed review with the issues below. Fix all of them:\n\n#{issues}"
+    end
+
+    raise Error, "review failed twice; giving up.\n#{issues}"
+  end
+
+  def list
+    ts = topics
+    if ts.empty?
+      puts "no cheatsheets yet"
+    else
+      puts ts
+    end
+  end
+end
+
+if __FILE__ == $PROGRAM_NAME
+  begin
+    case ARGV.first
+    when "generate"
+      abort "usage: cheatsheet generate <topic>" if ARGV[1].to_s.empty?
+      Cheatsheet.generate(ARGV[1..].join(" "))
+    when "list"
+      Cheatsheet.list
+    else
+      abort "usage: cheatsheet generate <topic> | cheatsheet list"
+    end
+  rescue Cheatsheet::Error => e
+    warn "error: #{e.message}"
+    exit 1
+  end
+end
