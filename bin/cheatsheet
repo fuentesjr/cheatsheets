@@ -44,10 +44,21 @@ module Cheatsheet
        .sort
   end
 
+  REPO_URL = "https://github.com/fuentesjr/cheatsheets"
+
   def rebuild_index(root = ROOT)
-    items = topics(root).map do |t|
-      %(      <li><a href="#{CGI.escapeHTML(t)}/">#{CGI.escapeHTML(t)}</a></li>)
-    end
+    names = topics(root)
+    body =
+      if names.empty?
+        %(    <p class="empty">No cheatsheets yet.</p>)
+      else
+        items = names.map do |t|
+          %(      <li><a href="#{CGI.escapeHTML(t)}/">#{CGI.escapeHTML(t)}</a></li>)
+        end
+        "    <ul>\n#{items.join("\n")}\n    </ul>"
+      end
+    count = names.size == 1 ? "1 sheet" : "#{names.size} sheets"
+
     File.write(File.join(root, "index.html"), <<~HTML)
       <!DOCTYPE html>
       <html lang="en">
@@ -58,19 +69,27 @@ module Cheatsheet
         <style>
           :root { color-scheme: light dark; }
           body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.6; }
-          h1 { font-size: 1.6rem; border-bottom: 1px solid #8884; padding-bottom: .5rem; }
+          h1 { font-size: 1.6rem; margin-bottom: .25rem; }
+          .tagline { color: #6b7280; margin-top: 0; }
+          .count { color: #6b7280; font-size: .9rem; border-bottom: 1px solid #8884; padding-bottom: .5rem; }
           ul { list-style: none; padding: 0; }
           li { margin: .25rem 0; }
-          a { color: #2563eb; text-decoration: none; font-size: 1.1rem; }
+          a { color: #2563eb; text-decoration: none; }
+          ul a { font-size: 1.1rem; }
           a:hover { text-decoration: underline; }
-          @media (prefers-color-scheme: dark) { a { color: #60a5fa; } }
+          .empty { color: #6b7280; }
+          footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #8884; color: #6b7280; font-size: .9rem; }
+          @media (prefers-color-scheme: dark) { a { color: #60a5fa; } .tagline, .count, .empty, footer { color: #9ca3af; } }
         </style>
       </head>
       <body>
         <h1>Cheatsheets</h1>
-        <ul>
-      #{items.join("\n")}
-        </ul>
+        <p class="tagline">Interactive, single-file reference sheets. Search, copy snippets, collapse sections, toggle theme.</p>
+        <p class="count">#{count}</p>
+      #{body}
+        <footer>
+          Generated with <a href="#{REPO_URL}">fuentesjr/cheatsheets</a>.
+        </footer>
       </body>
       </html>
     HTML

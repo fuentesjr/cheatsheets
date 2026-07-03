@@ -7,18 +7,28 @@
   <style>
     :root { color-scheme: light dark; }
     body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.6; }
-    h1 { font-size: 1.6rem; border-bottom: 1px solid #8884; padding-bottom: .5rem; }
+    h1 { font-size: 1.6rem; margin-bottom: .25rem; }
+    .tagline { color: #6b7280; margin-top: 0; }
+    .count { color: #6b7280; font-size: .9rem; border-bottom: 1px solid #8884; padding-bottom: .5rem; }
     ul { list-style: none; padding: 0; }
     li { margin: .25rem 0; }
-    a { color: #2563eb; text-decoration: none; font-size: 1.1rem; }
+    a { color: #2563eb; text-decoration: none; }
+    ul a { font-size: 1.1rem; }
     a:hover { text-decoration: underline; }
-    @media (prefers-color-scheme: dark) { a { color: #60a5fa; } }
+    .empty { color: #6b7280; }
+    footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #8884; color: #6b7280; font-size: .9rem; }
+    @media (prefers-color-scheme: dark) { a { color: #60a5fa; } .tagline, .count, .empty, footer { color: #9ca3af; } }
   </style>
 </head>
 <body>
   <h1>Cheatsheets</h1>
-  <ul>
+  <p class="tagline">Interactive, single-file reference sheets. Search, copy snippets, collapse sections, toggle theme.</p>
+  <p class="count">1 sheet</p>
+    <ul>
       <li><a href="minitest/">minitest</a></li>
-  </ul>
+    </ul>
+  <footer>
+    Generated with <a href="https://github.com/fuentesjr/cheatsheets">fuentesjr/cheatsheets</a>.
+  </footer>
 </body>
 </html>
