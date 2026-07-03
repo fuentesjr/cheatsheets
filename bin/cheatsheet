@@ -82,7 +82,9 @@ module Cheatsheet
   end
 
   def run_claude(prompt)
-    out = IO.popen(["claude", "-p"], "r+") do |io|
+    # --tools "" disables all tools so claude returns the completion as text
+    # instead of treating the prompt as an agentic task (writing files itself).
+    out = IO.popen(["claude", "-p", "--tools", ""], "r+") do |io|
       io.write(prompt)
       io.close_write
       io.read
