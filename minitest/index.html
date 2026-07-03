@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>minitest Cheatsheet</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --panel: #ffffff;
+    --border: #d9dde3;
+    --text: #1c2128;
+    --muted: #5a6472;
+    --accent: #a1201d;
+    --accent-fg: #ffffff;
+    --code-bg: #f0f2f5;
+    --code-text: #1c2128;
+    --kbd-bg: #e8ebef;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --copied: #1a7f37;
+  }
+  html[data-theme="dark"] {
+    --bg: #14171c;
+    --panel: #1c2128;
+    --border: #2d333b;
+    --text: #d7dce2;
+    --muted: #8b949e;
+    --accent: #e5534b;
+    --accent-fg: #14171c;
+    --code-bg: #0f1216;
+    --code-text: #c9d1d9;
+    --kbd-bg: #2d333b;
+    --shadow: 0 1px 3px rgba(0,0,0,0.4);
+    --copied: #3fb950;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-size: 15px;
+  }
+  code, pre, kbd { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    box-shadow: var(--shadow);
+  }
+  .header-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 1.15rem;
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  h1 .v { font-size: 0.7rem; color: var(--muted); font-weight: normal; }
+  .search-wrap { flex: 1 1 240px; min-width: 180px; }
+  #search {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 0.95rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+  }
+  #search:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button {
+    font: inherit;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 7px 12px;
+  }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #theme-toggle { white-space: nowrap; }
+
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .no-results {
+    display: none;
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--muted);
+  }
+  .no-results.show { display: block; }
+
+  details {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  summary {
+    cursor: pointer;
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 1.02rem;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  summary::before {
+    content: "▸";
+    color: var(--accent);
+    transition: transform 0.15s;
+    font-size: 0.85em;
+  }
+  details[open] > summary::before { transform: rotate(90deg); }
+  summary:hover { background: var(--code-bg); }
+
+  .section-body { padding: 4px 16px 14px; }
+
+  .entry {
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+  }
+  .entry:first-child { border-top: none; }
+  .entry-desc { color: var(--muted); font-size: 0.9rem; margin: 0 0 6px; }
+  .entry-desc strong { color: var(--text); font-weight: 600; }
+
+  .snippet {
+    position: relative;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin: 0;
+  }
+  .snippet pre {
+    margin: 0;
+    padding: 10px 44px 10px 12px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    color: var(--code-text);
+    line-height: 1.55;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    background: var(--panel);
+    opacity: 0.85;
+  }
+  .copy-btn:hover { opacity: 1; }
+  .copy-btn.copied { color: var(--copied); border-color: var(--copied); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin-top: 2px;
+  }
+  th, td {
+    text-align: left;
+    padding: 5px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th { color: var(--muted); font-weight: 600; }
+  td code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; font-size: 0.92em; white-space: nowrap; }
+  td:last-child code { white-space: normal; }
+
+  kbd {
+    background: var(--kbd-bg);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.8rem;
+  }
+  .note {
+    font-size: 0.85rem;
+    color: var(--muted);
+    border-left: 3px solid var(--accent);
+    padding: 4px 0 4px 10px;
+    margin: 8px 0;
+  }
+  .dep { color: var(--accent); font-weight: 600; font-size: 0.75rem; }
+  footer { text-align: center; color: var(--muted); font-size: 0.8rem; padding: 20px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-row">
+    <h1>minitest Cheatsheet <span class="v">5.x</span></h1>
+    <div class="search-wrap">
+      <input type="text" id="search" placeholder="Filter… (e.g. assert_raises, stub, --seed)" aria-label="Filter entries" autocomplete="off" spellcheck="false">
+    </div>
+    <button id="theme-toggle" aria-label="Toggle color theme">🌓 Theme</button>
+  </div>
+</header>
+
+<main>
+<div class="no-results" id="no-results">No matches. Clear the filter to see everything.</div>
+
+<details open>
+  <summary>Install &amp; Setup</summary>
+  <div class="section-body">
+    <div class="entry">
+      <p class="entry-desc">Add to <strong>Gemfile</strong> (bundled with Ruby stdlib, but pin explicitly for control)</p>
+      <div class="snippet"><pre>gem "minitest"
+
+# then
+bundle install</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Install directly</p>
+      <div class="snippet"><pre>gem install minitest</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Minimal test file — <code>require "minitest/autorun"</code> registers an at_exit runner</p>
+      <div class="snippet"><pre>require "minitest/autorun"
+
+class TestMath &lt; Minitest::Test
+  def test_addition
+    assert_equal 4, 2 + 2
+  end
+end</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Run a single file</p>
+      <div class="snippet"><pre>ruby -Ilib -Itest test/test_math.rb</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Spec-style file (same power, BDD syntax)</p>
+      <div class="snippet"><pre>require "minitest/autorun"
+
+describe "Math" do
+  it "adds numbers" do
+    _(2 + 2).must_equal 4
+  end
+end</pre></div>
+    </div>
+  </div>
+</details>
+
+<details open>
+  <summary>Running Tests (CLI options)</summary>
+  <div class="section-body">
+    <p class="note">Flags pass to the runner after the file, or via <code>TESTOPTS</code> with Rake. Set <code>SEED</code> or use <code>--seed</code> to reproduce order.</p>
+    <table>
+      <tr><th>Option</th><th>Effect</th></tr>
+      <tr><td><code>-h</code>, <code>--help</code></td><td>Display runner options</td></tr>
+      <tr><td><code>-s</code>, <code>--seed N</code></td><td>Set random seed for test order</td></tr>
+      <tr><td><code>-v</code>, <code>--verbose</code></td><td>Verbose output; show each test name &amp; time</td></tr>
+      <tr><td><code>-n</code>, <code>--name PAT</code></td><td>Run tests matching string or <code>/regexp/</code></td></tr>
+      <tr><td><code>-e</code>, <code>--exclude PAT</code></td><td>Skip tests matching string or <code>/regexp/</code></td></tr>
+      <tr><td><code>-p</code>, <code>--pride</code></td><td>Rainbow "pride" output 🌈</td></tr>
+    </table>
+    <div class="entry">
+      <p class="entry-desc">Run one test by name</p>
+      <div class="snippet"><pre>ruby -Itest test/test_math.rb -n test_addition
+ruby -Itest test/test_math.rb -n "/add/"</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Reproduce a failing random order</p>
+      <div class="snippet"><pre>ruby -Itest test/test_math.rb --seed 12345
+# or
+SEED=12345 ruby -Itest test/test_math.rb</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Via Rake (default <code>test</code> task from <code>Rake::TestTask</code>)</p>
+      <div class="snippet"><pre>rake test
+rake test TESTOPTS="--seed 12345 -v"
+rake test TEST=test/test_math.rb</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Rakefile test task</p>
+      <div class="snippet"><pre>require "rake/testtask"
+
+Rake::TestTask.new(:test) do |t|
+  t.libs &lt;&lt; "test"
+  t.libs &lt;&lt; "lib"
+  t.test_files = FileList["test/**/test_*.rb"]
+  t.warning = true
+end</pre></div>
+    </div>
+  </div>
+</details>
+
+<details open>
+  <summary>Assertions</summary>
+  <div class="section-body">
+    <p class="note">All take an optional final <code>msg</code>. Every assertion has a <code>refute_*</code> negation with identical signature.</p>
+    <table>
+      <tr><th>Assertion</th><th>Passes when</th></tr>
+      <tr><td><code>assert(test, msg=nil)</code></td><td><code>test</code> is truthy</td></tr>
+      <tr><td><code>assert_equal(exp, act)</code></td><td><code>exp == act</code></td></tr>
+      <tr><td><code>assert_same(exp, act)</code></td><td><code>exp.equal?(act)</code> (same object)</td></tr>
+      <tr><td><code>assert_nil(obj)</code></td><td><code>obj.nil?</code></td></tr>
+      <tr><td><code>assert_empty(obj)</code></td><td><code>obj.empty?</code></td></tr>
+      <tr><td><code>assert_includes(coll, obj)</code></td><td><code>coll.include?(obj)</code></td></tr>
+      <tr><td><code>assert_match(re, str)</code></td><td><code>re =~ str</code></td></tr>
+      <tr><td><code>assert_instance_of(cls, obj)</code></td><td><code>obj.instance_of?(cls)</code></td></tr>
+      <tr><td><code>assert_kind_of(cls, obj)</code></td><td><code>obj.kind_of?(cls)</code></td></tr>
+      <tr><td><code>assert_respond_to(obj, m)</code></td><td><code>obj.respond_to?(m)</code></td></tr>
+      <tr><td><code>assert_predicate(obj, m)</code></td><td><code>obj.send(m)</code> is truthy (e.g. <code>:empty?</code>)</td></tr>
+      <tr><td><code>assert_operator(a, op, b)</code></td><td><code>a.send(op, b)</code> is truthy</td></tr>
+      <tr><td><code>assert_in_delta(exp, act, d=0.001)</code></td><td><code>|exp-act| &lt;= d</code></td></tr>
+      <tr><td><code>assert_in_epsilon(a, b, e=0.001)</code></td><td>relative error within epsilon</td></tr>
+      <tr><td><code>assert_raises(*classes) { }</code></td><td>block raises one of the classes; returns the exception</td></tr>
+      <tr><td><code>assert_throws(sym) { }</code></td><td>block throws <code>sym</code></td></tr>
+      <tr><td><code>assert_output(out, err) { }</code></td><td>stdout/stderr match String or Regexp (nil = ignore)</td></tr>
+      <tr><td><code>assert_silent { }</code></td><td>block produces no output</td></tr>
+      <tr><td><code>assert_path_exists(path)</code></td><td><code>File.exist?(path)</code></td></tr>
+    </table>
+    <div class="entry">
+      <p class="entry-desc">Capture &amp; inspect a raised exception</p>
+      <div class="snippet"><pre>err = assert_raises(ArgumentError) do
+  Integer("nope")
+end
+assert_match(/invalid value/, err.message)</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Assert against output</p>
+      <div class="snippet"><pre>assert_output("hello\n", "") { puts "hello" }
+assert_output(/\d+ rows/, nil) { report }</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc"><code>flunk</code> / <code>pass</code> / <code>skip</code> — control flow inside a test</p>
+      <div class="snippet"><pre>flunk "should not reach here"      # always fails
+pass                                # counts as one assertion
+skip "pending API" unless online?  # marked S, not F</pre></div>
+    </div>
+  </div>
+</details>
+
+<details open>
+  <summary>Spec Expectations (BDD)</summary>
+  <div class="section-body">
+    <p class="note">Wrap the subject with <code>_(obj)</code>, <code>value(obj)</code>, or <code>expect(obj)</code>. Each <code>must_*</code> has a <code>wont_*</code> negation.</p>
+    <table>
+      <tr><th>Expectation</th><th>≡ Assertion</th></tr>
+      <tr><td><code>_(x).must_equal y</code></td><td><code>assert_equal</code></td></tr>
+      <tr><td><code>_(x).must_be_nil</code></td><td><code>assert_nil</code></td></tr>
+      <tr><td><code>_(x).must_be_empty</code></td><td><code>assert_empty</code></td></tr>
+      <tr><td><code>_(x).must_include y</code></td><td><code>assert_includes</code></td></tr>
+      <tr><td><code>_(x).must_match re</code></td><td><code>assert_match</code></td></tr>
+      <tr><td><code>_(x).must_be_instance_of C</code></td><td><code>assert_instance_of</code></td></tr>
+      <tr><td><code>_(x).must_be_kind_of C</code></td><td><code>assert_kind_of</code></td></tr>
+      <tr><td><code>_(x).must_respond_to m</code></td><td><code>assert_respond_to</code></td></tr>
+      <tr><td><code>_(x).must_be :&gt;, 0</code></td><td><code>assert_operator</code></td></tr>
+      <tr><td><code>_(x).must_be_close_to y, d</code></td><td><code>assert_in_delta</code></td></tr>
+      <tr><td><code>_(x).must_be_within_epsilon y</code></td><td><code>assert_in_epsilon</code></td></tr>
+      <tr><td><code>_ { ... }.must_raise E</code></td><td><code>assert_raises</code></td></tr>
+      <tr><td><code>_ { ... }.must_output out</code></td><td><code>assert_output</code></td></tr>
+      <tr><td><code>_ { ... }.must_throw s</code></td><td><code>assert_throws</code></td></tr>
+    </table>
+    <div class="entry">
+      <p class="entry-desc">Block-form expectations use <code>_ { }</code></p>
+      <div class="snippet"><pre>describe "parse" do
+  it "rejects bad input" do
+    _ { parse("x") }.must_raise ParseError
+  end
+end</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Disable expectations globally to avoid <code>Object</code> monkey-patching</p>
+      <div class="snippet"><pre>MT_NO_EXPECTATIONS=1 ruby -Itest test/spec.rb</pre></div>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Test Structure &amp; Lifecycle</summary>
+  <div class="section-body">
+    <div class="entry">
+      <p class="entry-desc"><code>setup</code> / <code>teardown</code> run around <strong>each</strong> test method</p>
+      <div class="snippet"><pre>class TestUser &lt; Minitest::Test
+  def setup
+    @user = User.new(name: "Ada")
+  end
+
+  def teardown
+    @user = nil
+  end
+
+  def test_name
+    assert_equal "Ada", @user.name
+  end
+end</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Spec hooks: <code>before</code> / <code>after</code> (per example), plus setup/teardown</p>
+      <div class="snippet"><pre>describe User do
+  before { @user = User.new }
+  after  { @user = nil }
+
+  it("has a name") { _(@user.name).must_be_nil }
+end</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Force declaration order instead of random</p>
+      <div class="snippet"><pre>class TestSeq &lt; Minitest::Test
+  i_suck_and_my_tests_are_order_dependent!
+  # or override:
+  def self.test_order; :alpha; end   # :random (default), :sorted, :alpha
+end</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Shared behavior via a module included into a Test class</p>
+      <div class="snippet"><pre>module Serializable
+  def test_round_trips
+    assert_equal @obj, load(dump(@obj))
+  end
+end
+
+class TestJSON &lt; Minitest::Test
+  include Serializable
+  def setup; @obj = {a: 1}; end
+end</pre></div>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Mocks &amp; Stubs</summary>
+  <div class="section-body">
+    <div class="entry">
+      <p class="entry-desc"><code>Minitest::Mock</code> — set expectations, then <code>verify</code> they were met</p>
+      <div class="snippet"><pre>mock = Minitest::Mock.new
+mock.expect(:save, true)
+mock.expect(:name, "Ada")
+
+assert mock.save
+assert_equal "Ada", mock.name
+mock.verify   # raises MockExpectationError if unmet</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Expect with specific arguments</p>
+      <div class="snippet"><pre>mock.expect(:charge, :ok, [100, "usd"])
+mock.charge(100, "usd")     # ok
+# mock.charge(50, "usd")    # MockExpectationError</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Validate args with a block (and keyword args)</p>
+      <div class="snippet"><pre>mock.expect(:send_mail, true) do |to:, subject:|
+  to.end_with?("@example.com")
+end
+mock.send_mail(to: "a@example.com", subject: "Hi")</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc"><code>stub</code> — temporarily replace a method for the block's duration</p>
+      <div class="snippet"><pre>Time.stub(:now, Time.at(0)) do
+  assert_equal 0, Time.now.to_i
+end
+
+# stub with a callable / dynamic value
+user.stub(:admin?, -> { true }) do
+  assert dashboard.visible?
+end</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Pass a Mock as the stub value to also assert the call</p>
+      <div class="snippet"><pre>m = Minitest::Mock.new
+m.expect(:call, 42, [1, 2])
+obj.stub(:compute, m) do
+  assert_equal 42, obj.compute(1, 2)
+end
+m.verify</pre></div>
+    </div>
+    <p class="note"><code>stub</code> requires <code>require "minitest/autorun"</code> (or <code>minitest/mock</code>) and is available inside Test/spec bodies.</p>
+  </div>
+</details>
+
+<details>
+  <summary>Benchmarking</summary>
+  <div class="section-body">
+    <div class="entry">
+      <p class="entry-desc">Assert an algorithm fits a complexity curve — subclass <code>Minitest::Benchmark</code></p>
+      <div class="snippet"><pre>require "minitest/benchmark"
+
+class BenchSort &lt; Minitest::Benchmark
+  def bench_linear
+    assert_performance_linear 0.99 do |n|
+      Array.new(n) { rand }.sort
+    end
+  end
+end</pre></div>
+    </div>
+    <table>
+      <tr><th>Method</th><th>Asserts</th></tr>
+      <tr><td><code>assert_performance_constant(threshold=0.99)</code></td><td>O(1)</td></tr>
+      <tr><td><code>assert_performance_linear(threshold=0.99)</code></td><td>O(n)</td></tr>
+      <tr><td><code>assert_performance_power</code></td><td>O(n^k)</td></tr>
+      <tr><td><code>assert_performance_logarithmic</code></td><td>O(log n)</td></tr>
+      <tr><td><code>self.bench_range</code></td><td>Override to set input sizes (default 1,10,100,1k,10k)</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Plugins &amp; Reporters</summary>
+  <div class="section-body">
+    <div class="entry">
+      <p class="entry-desc">Popular add-on gems (add to Gemfile)</p>
+      <div class="snippet"><pre>gem "minitest-reporters"   # colored, spec, JUnit output
+gem "minitest-focus"       # focus: run a single marked test
+gem "minitest-hooks"       # before_all / after_all / around
+gem "minitest-retry"       # retry flaky tests
+gem "minitest-stub-const"  # stub_const for the block</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">minitest-reporters setup</p>
+      <div class="snippet"><pre>require "minitest/reporters"
+Minitest::Reporters.use! [
+  Minitest::Reporters::SpecReporter.new
+]</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">minitest-focus — isolate one test</p>
+      <div class="snippet"><pre>class TestX &lt; Minitest::Test
+  focus
+  def test_only_this; assert true; end
+end</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc">Disable third-party plugin autoloading</p>
+      <div class="snippet"><pre>MT_NO_PLUGINS=1 ruby -Itest test/test_x.rb</pre></div>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary>Environment Variables</summary>
+  <div class="section-body">
+    <table>
+      <tr><th>Variable</th><th>Purpose</th></tr>
+      <tr><td><code>SEED</code></td><td>Fix test order (same as <code>--seed</code>)</td></tr>
+      <tr><td><code>MT_NO_PLUGINS</code></td><td>Skip loading installed plugins</td></tr>
+      <tr><td><code>MT_NO_EXPECTATIONS</code></td><td>Don't add <code>must_*</code>/<code>wont_*</code> to Object</td></tr>
+      <tr><td><code>MT_KWARGS_HAC=""</code></td><td>Silence keyword-arg deprecation shims (transitional)</td></tr>
+      <tr><td><code>N=4</code> (with plugin)</td><td>Parallel worker count for parallel-runner plugins</td></tr>
+    </table>
+  </div>
+</details>
+
+<details>
+  <summary>Gotchas &amp; Tips</summary>
+  <div class="section-body">
+    <div class="entry">
+      <p class="entry-desc"><strong>Argument order is <code>(expected, actual)</code></strong> — reversing them produces confusing diff output</p>
+      <div class="snippet"><pre>assert_equal 4, result   # exp, act  ✔
+assert_equal result, 4   # backwards ✘</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc"><strong>Wrap spec subjects</strong> — bare <code>obj.must_equal</code> triggers a deprecation; use <code>_()</code></p>
+      <div class="snippet"><pre>_(user.name).must_equal "Ada"   # ✔
+user.name.must_equal "Ada"      # deprecated global expectation</pre></div>
+    </div>
+    <div class="entry">
+      <p class="entry-desc"><strong>Test method names must start with <code>test_</code></strong> in Minitest::Test subclasses, or they never run</p>
+    </div>
+    <div class="entry">
+      <p class="entry-desc"><strong><code>assert_nil</code> vs <code>assert_equal nil, x</code></strong> — the latter warns; prefer the dedicated assertion</p>
+    </div>
+    <div class="entry">
+      <p class="entry-desc"><strong>Random order is intentional.</strong> If tests fail only sometimes, you have shared state — don't reach for <code>i_suck_...</code>, fix the leak</p>
+    </div>
+    <div class="entry">
+      <p class="entry-desc"><strong>A test with no assertions</strong> is reported but "passes" — Minitest doesn't fail empty tests; use <code>pass</code> only if intentional</p>
+    </div>
+    <div class="entry">
+      <p class="entry-desc"><strong>Custom assertion:</strong> just wrap <code>assert</code>/<code>refute</code> in a method available to your tests</p>
+      <div class="snippet"><pre>module Minitest::Assertions
+  def assert_even(n, msg = nil)
+    msg ||= "Expected #{n.inspect} to be even"
+    assert n.even?, msg
+  end
+end</pre></div>
+    </div>
+  </div>
+</details>
+
+<footer>minitest 5.x quick reference · offline single-file cheatsheet</footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- Theme (applied pre-paint via inline in head is ideal; do earliest here) ----
+  var root = document.documentElement;
+  function applyTheme(t) { root.setAttribute("data-theme", t); }
+  var stored = null;
+  try { stored = localStorage.getItem("mt-theme"); } catch (e) {}
+  if (stored === "dark" || stored === "light") {
+    applyTheme(stored);
+  } else {
+    var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    applyTheme(prefersDark ? "dark" : "light");
+  }
+
+  document.getElementById("theme-toggle").addEventListener("click", function () {
+    var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    applyTheme(next);
+    try { localStorage.setItem("mt-theme", next); } catch (e) {}
+  });
+
+  // ---- Copy buttons ----
+  function addCopyButtons() {
+    var snippets = document.querySelectorAll(".snippet");
+    snippets.forEach(function (snip) {
+      var pre = snip.querySelector("pre");
+      if (!pre) return;
+      var btn = document.createElement("button");
+      btn.className = "copy-btn";
+      btn.type = "button";
+      btn.textContent = "Copy";
+      btn.setAttribute("aria-label", "Copy code snippet");
+      btn.addEventListener("click", function () {
+        copyText(pre.textContent, btn);
+      });
+      snip.appendChild(btn);
+    });
+  }
+
+  function flash(btn) {
+    var prev = btn.textContent;
+    btn.textContent = "Copied!";
+    btn.classList.add("copied");
+    setTimeout(function () {
+      btn.textContent = prev;
+      btn.classList.remove("copied");
+    }, 1400);
+  }
+
+  function copyText(text, btn) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { flash(btn); }, function () { fallbackCopy(text, btn); });
+    } else {
+      fallbackCopy(text, btn);
+    }
+  }
+
+  function fallbackCopy(text, btn) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.top = "-1000px";
+    ta.setAttribute("readonly", "");
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); flash(btn); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  addCopyButtons();
+
+  // ---- Search / filter ----
+  var search = document.getElementById("search");
+  var noResults = document.getElementById("no-results");
+  var sections = Array.prototype.slice.call(document.querySelectorAll("details"));
+  // Cache openness so we can restore after clearing filter
+  var savedOpen = sections.map(function (s) { return s.open; });
+
+  function normalize(s) { return s.toLowerCase(); }
+
+  search.addEventListener("input", function () {
+    var q = normalize(search.value.trim());
+    var anyVisible = false;
+
+    if (q === "") {
+      sections.forEach(function (sec, i) {
+        sec.style.display = "";
+        sec.open = savedOpen[i];
+        sec.querySelectorAll(".entry, tr").forEach(function (el) { el.style.display = ""; });
+      });
+      noResults.classList.remove("show");
+      return;
+    }
+
+    sections.forEach(function (sec) {
+      var summaryText = normalize(sec.querySelector("summary").textContent);
+      var sectionHit = summaryText.indexOf(q) !== -1;
+      var localVisible = false;
+
+      // Filter granular rows: .entry blocks and standalone table rows
+      var units = sec.querySelectorAll(".entry, table tr");
+      units.forEach(function (unit) {
+        // skip header rows (th)
+        if (unit.tagName === "TR" && unit.querySelector("th")) { return; }
+        var text = normalize(unit.textContent);
+        var hit = sectionHit || text.indexOf(q) !== -1;
+        unit.style.display = hit ? "" : "none";
+        if (hit) localVisible = true;
+      });
+
+      // Header rows: show only if their table has a visible data row
+      sec.querySelectorAll("table").forEach(function (tbl) {
+        var hasVisible = Array.prototype.some.call(tbl.querySelectorAll("tr"), function (tr) {
+          return !tr.querySelector("th") && tr.style.display !== "none";
+        });
+        var header = tbl.querySelector("tr th") ? tbl.querySelector("tr") : null;
+        if (header && header.parentElement) {
+          header.style.display = (sectionHit || hasVisible) ? "" : "none";
+        }
+      });
+
+      var visible = sectionHit || localVisible;
+      sec.style.display = visible ? "" : "none";
+      if (visible) { sec.open = true; anyVisible = true; }
+    });
+
+    noResults.classList.toggle("show", !anyVisible);
+  });
+
+  // Keep savedOpen in sync when user manually toggles (only while unfiltered)
+  sections.forEach(function (sec, i) {
+    sec.addEventListener("toggle", function () {
+      if (search.value.trim() === "") { savedOpen[i] = sec.open; }
+    });
+  });
+
+  // "/" focuses search
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "/" && document.activeElement !== search) {
+      e.preventDefault();
+      search.focus();
+    } else if (e.key === "Escape" && document.activeElement === search) {
+      search.value = "";
+      search.dispatchEvent(new Event("input"));
+    }
+  });
+})();
+</script>
+</body>
+</html>
